@@ -1,0 +1,16 @@
+# Ignore test images
+test_images/
+
+# Ignore Python bytecode files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore virtual environment directory
+.venv/
+
+# Ignore other temporary files
+.DS_Store
+.idea/
+*.log
+*.tmp
