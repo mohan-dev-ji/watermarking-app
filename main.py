@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk, ImageDraw, ImageFont
-# import cairosvg
+
 
 # Initialize the Tkinter window
 root = Tk()
@@ -11,6 +11,9 @@ root.geometry("800x600")
 # Global variable to hold the image
 img = None
 watermarked_display = None
+image_watermark_added = None
+watermark_image_copy = None
+# image_watermark_added == False
 # original_size = None
 
 # Function to open image
@@ -26,16 +29,16 @@ def open_image():
         canvas.create_image(200, 200, image=img_tk)
         canvas.image = img_tk
 
-
 # Function to add text watermark
 def add_text_watermark():
-    global img, image_path, image_label, watermarked_display
+    global img, image_path, image_label, watermarked_display, image_watermark_added
     if img is None:
         messagebox.showerror("Error", "Please upload an image first.")
         return
 
     # watermark_text = "Sample Watermark"
     watermark_text = text_entry.get()
+    # opacity = opacity_scale.get()
 
     # Determine the appropriate font size based on image width
     width, height = img.size
@@ -56,11 +59,12 @@ def add_text_watermark():
     x = (width - textwidth) / 2
     y = (height - textheight) / 2
 
-    # Opacity
-    opacity = 200
+    # Get the opacity value from the scale widget
+    opacity = opacity_scale.get()
+    alpha = int(255 * (opacity / 100))
 
     # Add the text watermark
-    draw.text((x, y), watermark_text, font=font, fill=(255, 255, 255, opacity))
+    draw.text((x, y), watermark_text, font=font, fill=(255, 255, 255, alpha))
 
     # Composite the text image onto the original image
     watermarked_display = Image.alpha_composite(img.convert("RGBA"), text_image)
@@ -76,18 +80,25 @@ def add_text_watermark():
     canvas.create_image(200, 200, image=img_display)
     canvas.image = img_display
 
-# Function to add a watermark
+    # text_watermark_added = True
+    image_watermark_added = False
+
+# Function to add image watermark
 def add_watermark():
-    global img, image_path, image_label, watermarked_display
+    global img, image_path, image_label, watermarked_display, image_watermark_added, watermark_image_copy
+
+    print(f"image watermark added: {image_watermark_added}")
     if img is None:
         messagebox.showwarning("No image", "Please upload an image first.")
         return
-   
-    file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png *.svg")])
-    if not file_path:
-        return
-    
-    watermark_image = Image.open(file_path).convert("RGBA")
+    if image_watermark_added != True:
+        file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png *.svg")])
+        if not file_path:
+            return
+        watermark_image = Image.open(file_path).convert("RGBA")
+        watermark_image_copy = watermark_image.copy()
+    else:
+        watermark_image = watermark_image_copy
 
      # Resize the watermark image to fit 20% of the original image width
     width, height = img.size
@@ -97,6 +108,17 @@ def add_watermark():
 
     # Resize the watermark image
     watermark_image = watermark_image.resize((watermark_width, watermark_height), Image.LANCZOS)
+
+    # Get the opacity value from the scale widget
+    opacity = opacity_scale.get()
+    alpha = int(255 * (opacity / 100))
+
+    # Apply opacity to the watermark image
+    watermark_image = watermark_image.copy()
+    for x in range(watermark_width):
+        for y in range(watermark_height):
+            r, g, b, a = watermark_image.getpixel((x, y))
+            watermark_image.putpixel((x, y), (r, g, b, int(a * (alpha / 255))))
 
    # Create a transparent layer the size of the image to place the watermark on
     transparent = Image.new('RGBA', img.size, (0, 0, 0, 0))
@@ -120,9 +142,9 @@ def add_watermark():
     canvas.create_image(200, 200, image=img_display)
     canvas.image = img_display
 
+    image_watermark_added = True
 
-
-
+# Function to save watermark
 def save_image():
     global watermarked_display, original_size
     if watermarked_display is None:
@@ -138,11 +160,22 @@ def save_image():
         rgb_image.save(file_path)
         messagebox.showinfo("Success", f"Image saved to {file_path}")
 
+def on_opacity_change(value):
+    global img, image_watermark_added, root
+    # if root:
+    if img is None:
+        messagebox.showerror("Error", "Please upload an image first.")
+        return
+    print(value)
+    # opacity = value
+    if image_watermark_added == True:
+        add_watermark()
+    else:
+        add_text_watermark()  # Call add_text_watermark with the new opacity
 
-# root = Tk()
-# root.title("Image Watermarking App")
-# root.geometry("800x600")
-# root.configure(padx=50, pady=50, bg="black")
+
+
+
 
 # Canvas to display the image
 canvas = Canvas(root, width=400, height=400)
@@ -169,15 +202,16 @@ save_btn = Button(root, text="Save Image", command=save_image)
 save_btn.pack()
 
 opacity_scale = Scale(root, from_=0, to=100, orient=HORIZONTAL)
+# Temporarily unregister the command
+opacity_scale.config(command=None)
 opacity_scale.set(100)
+# Re-register the command
+opacity_scale.config(command=on_opacity_change)
 opacity_scale.pack()
+# opacity_scale.bind("<Motion>", add_text_watermark)
 
 # Add a label to display the image
 image_label = Label(root)
 image_label.pack()
-
-# Placeholder for the image and watermarked image
-# img = None
-# image_with_watermark = None
 
 root.mainloop()
