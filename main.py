@@ -13,8 +13,6 @@ img = None
 watermarked_display = None
 image_watermark_added = None
 watermark_image_copy = None
-# image_watermark_added == False
-# original_size = None
 
 # Function to open image
 def open_image():
@@ -175,8 +173,6 @@ def on_opacity_change(value):
 
 
 
-
-
 # Canvas to display the image
 canvas = Canvas(root, width=400, height=400)
 canvas.pack()
@@ -201,14 +197,15 @@ watermark_btn.pack()
 save_btn = Button(root, text="Save Image", command=save_image)
 save_btn.pack()
 
+# Add opacity slider
 opacity_scale = Scale(root, from_=0, to=100, orient=HORIZONTAL)
-# Temporarily unregister the command
+# Temporarily unregister the command to stop being called on start up
 opacity_scale.config(command=None)
 opacity_scale.set(100)
 # Re-register the command
 opacity_scale.config(command=on_opacity_change)
 opacity_scale.pack()
-# opacity_scale.bind("<Motion>", add_text_watermark)
+
 
 # Add a label to display the image
 image_label = Label(root)
